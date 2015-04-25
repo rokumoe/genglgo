@@ -1,0 +1,89 @@
+package gl
+
+//#cgo linux	CFLAGS: -DGL_PLATFORM_LINUX
+//#cgo windows	CFLAGS: -DGL_PLATFORM_WINDOWS
+//#cgo linux	LDFLAGS: -lGL
+//#cgo windows  LDFLAGS: -lopengl32
+import "C"
+
+/*
+#if defined(GL_PLATFORM_LINUX)
+#include <GL/glx.h>
+
+static void* _glgo_GetProcAddress(const char* name) {
+	return glXGetProcAddress(name);
+}
+#elif defined(GL_PLATFORM_WINDOWS)
+#include <Windows.h>
+
+static void* _glgo_GetProcAddress(const char* name) {
+	return wglGetProcAddress((LPCSTR)name);
+}
+#else
+#error "Unsupport platform"
+#endif
+*/
+import "C"
+
+/*
+#if defined(APIENTRY)
+#define GLGO_APIENTRY APIENTRY
+#elif defined(_STDCALL_SUPPORTED)
+#define GLGO_APIENTRY __stdcall
+#else
+#define GLGO_APIENTRY
+#endif
+
+#define GLGO_COMMAND_DECL(return_type, command, ...) \
+typedef return_type (GLGO_APIENTRY *_glgo_t_##command)(##__VA_ARGS__);\
+static _glgo_t_##command _glgo_p_##command = 0;\
+return_type command(##__VA_ARGS__)
+
+#define GLGO_COMMAND_RET(command, ...) \
+{\
+	return _glgo_p_##command(##__VA_ARGS__); \
+}
+
+#define GLGO_COMMAND_0RET(command, ...) \
+{\
+	return _glgo_p_##command(##__VA_ARGS__); \
+}
+
+#define GLGO_COMMAND_GETPROC(command) \
+	(_glgo_p_##command = (_glgo_t_##command)_glgo_GetProcAddress(#command))
+
+*GLGO_COMMAND_DECL(<return_type>, <command>, <params...>)
+*GLGO_COMMAND_RET(<command>, <paramnames...>)
+
+*GLGO_COMMAND_DECL(<return_type>, <command>, <params...>)
+*GLGO_COMMAND_0RET(<command>, <paramnames...>)
+
+int gl_init()
+{
+*	if (GLGO_COMMAND_GETPROC(<command>) == NULL) {
+*		return __LINE__;
+*	}
+	return 0;
+}
+*/
+import "C"
+
+const (
+*	<killgl(enum)> = <value> // <comment>
+)
+
+type (
+*	<killgl(type)> = <mapgo(type)>
+)
+
+*func <killgl(command)>(<killgl(params...)>) {
+*	C.<command>(<paramnames...>)
+*}
+
+*func <killgl(command)>(<killgl(params...)>) <mapgo(return_type)> {
+*	return <mapgo(return_type)>(C.<command>(<paramnames...>))
+*}
+
+func Init() int {
+	return int(C.gl_init())
+}
