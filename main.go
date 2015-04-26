@@ -408,10 +408,16 @@ func convert(glxml string, api string, number string, glgo string) error {
 }
 
 func main() {
-	var argin string
-	var argout string
+	var (
+		argin  string
+		argout string
+		argapi string
+		argver string
+	)
 	flag.StringVar(&argin, "i", "gl.xml", "input path of gl.xml")
-	flag.StringVar(&argout, "o", "../gl/gl.go", "output path of gl.go")
+	flag.StringVar(&argout, "o", "gl.go", "output path of gl.go")
+	flag.StringVar(&argapi, "a", "", "GL API")
+	flag.StringVar(&argver, "v", "2.1", "OpenGL version")
 	flag.Parse()
 	if !flag.Parsed() || flag.NArg() != 0 {
 		panic("miss arg")
@@ -420,7 +426,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := convert(argin, "", "2.1", outpath); err != nil {
+	if err := convert(argin, argapi, argver, outpath); err != nil {
 		panic(err)
 	}
 }
