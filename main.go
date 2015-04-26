@@ -2,15 +2,22 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 var template = []string{
 	`package gl
-
+`,
+	`
+import (
+	"unsafe"
+)
+`,
+	`
 //#cgo linux	CFLAGS: -DGL_PLATFORM_LINUX
 //#cgo windows	CFLAGS: -DGL_PLATFORM_WINDOWS
 //#cgo linux	LDFLAGS: -lGL
@@ -77,15 +84,33 @@ import "C"
 {`,
 	`	return 0;
 }*/
-import "C"`,
-	``,
-	``,
-	``,
+import "C"
+`,
+	`
+const (
+`,
+	`)
+`,
+	`
+type (
+`,
+	`)
+`,
+	`
+func Init() int {
+	return int(C.gl_init())
+}
+`,
 }
 
 type pair struct {
-	k string
-	v string
+	name  string
+	type_ string
+}
+
+type type_info struct {
+	name string
+	text string
 }
 
 type command_info struct {
@@ -93,43 +118,84 @@ type command_info struct {
 	rettype string
 }
 
-func gen_c_def_type(is_types map[string]bool, api string, types registry_types) string {
-	for _, t := range types.type_ {
-		if is_types[t.name] && is_same_api(api, t.api) {
-			if t.requires != "" {
-				is_types[t.requires] = true
+func is_same_api(a string, b string) bool {
+	return a == b || (a == "" && b == "gl") || (a == "gl" && b == "")
+}
+
+func kill_gl(s string) string {
+	var prefixes = [...]string{
+		"GL_",
+		"GL",
+		"gl",
+	}
+	for i := 0; i < len(prefixes); i++ {
+		if strings.HasPrefix(s, prefixes[i]) && len(s) > len((prefixes[i])) {
+			b := []byte(s[len(prefixes[i]):])
+			if !unicode.IsDigit(rune(b[0])) {
+				b[0] = byte(unicode.ToUpper(rune(b[0])))
+				s = string(b)
+			} else {
+				s = "GL_" + string(b)
 			}
 		}
 	}
-	s := ""
-	for _, t := range types.type_ {
-		if is_types[t.name] && is_same_api(api, t.api) {
-			b := 0
-			for i := 0; i <= len(t.text); i++ {
-				if i == len(t.text) || t.text[i] == '\n' {
-					s += "//" + t.text[b:i] + "\n"
-					b = i + 1
-				}
+	return s
+}
+
+var map_go_ptype = map[string]string{
+	"Enum":     "uint32",
+	"Boolean":  "uint8",
+	"Bitfield": "uint32",
+	"VoidPtr":  "unsafe.Pointer",
+	"Byte":     "int8",
+	"Short":    "int16",
+	"Int":      "int32",
+	"Ubyte":    "uint8",
+	"Ushort":   "uint16",
+	"Uint":     "uint32",
+	"Sizei":    "int32",
+	"Float":    "float32",
+	"Clampf":   "float32",
+	"Double":   "float64",
+	"Clampd":   "float64",
+	"Char":     "int8",
+	"Half":     "uint16",
+	"Intptr":   "uintptr",
+	"Sizeiptr": "uintptr",
+	"Int64":    "int64",
+	"Uint64":   "uint64",
+	"Sync":     "unsafe.Pointer",
+	"Fixed":    "int32",
+}
+
+func gen_c_def_type(types []type_info) string {
+	s := "\n"
+	for _, t := range types {
+		b := 0
+		for i := 0; i <= len(t.text); i++ {
+			if i == len(t.text) || t.text[i] == '\n' {
+				s += "//" + t.text[b:i] + "\n"
+				b = i + 1
 			}
 		}
 	}
-	return s + "import \"C\"\n"
+	return s + "import \"C\"\n\n"
 }
 
 func gen_c_def_command(command string, info command_info) string {
 	var (
-		params     string
-		paramnames string
+		params    string
+		paramargs string
 	)
 	for _, p := range info.params {
 		if params != "" {
 			params += ", "
 		}
-		if paramnames != "" {
-			paramnames += ", "
+		if paramargs != "" {
+			paramargs += ", "
 		}
-		params += p.v + " " + p.k
-		paramnames += p.k
+		params += p.type_ + " " + p.name
+		paramargs += p.name
 	}
 	def := "GLGO_COMMAND_DECL(" + info.rettype + ", " + command + ", " + params + ")\n"
 	if info.rettype == "void" {
@@ -137,18 +203,76 @@ func gen_c_def_command(command string, info command_info) string {
 	} else {
 		def += "GLGO_COMMAND_RET"
 	}
-	def += "(" + command + ", " + paramnames + ")\n"
+	def += "(" + command + ", " + paramargs + ")\n"
 	return def
 }
 
 func gen_c_init_command(command string) string {
 	return `	if (GLGO_COMMAND_GETPROC(` + command + `) == NULL) {
 		return __LINE__;
-	}`
+	}
+`
 }
 
-func is_same_api(a string, b string) bool {
-	return a == b || (a == "" && b == "gl") || (a == "gl" && b == "")
+var list_go_kw = [...]string{
+	"type",
+	"map",
+	"func",
+	"range",
+	"cap",
+	"string",
+}
+
+func save_gokw(w string) string {
+	for _, k := range list_go_kw {
+		if k == w {
+			return w + "_"
+		}
+	}
+	return w
+}
+
+func map_gotype(t string) string {
+	if strings.Contains(t, "void *") {
+		return "VoidPtr"
+	}
+	r := ""
+	t = strings.Replace(t, "*", " * ", -1)
+	for _, s := range strings.Split(t, " ") {
+		if s == "*" {
+			r = "*" + r
+		} else if strings.HasPrefix(s, "GL") {
+			r += kill_gl(s)
+		}
+	}
+	return r
+}
+
+func gen_go_def_command(command string, info command_info) string {
+	params := ""
+	paramargs := ""
+	for _, p := range info.params {
+		name := save_gokw(p.name)
+		if params != "" {
+			params += ", "
+		}
+		params += name + " " + map_gotype(p.type_)
+		if paramargs != "" {
+			paramargs += ", "
+		}
+		paramargs += name
+	}
+	s := "func " + kill_gl(command) + "(" + params + ") "
+	if info.rettype != "void" {
+		rettype := map_gotype(info.rettype)
+		s += rettype + " {\n"
+		s += "\treturn " + rettype + "(C." + command + "(" + paramargs + "))\n"
+	} else {
+		s += " {\n"
+		s += "\tC." + command + "(" + paramargs + ")\n"
+	}
+	s += "}\n"
+	return s
 }
 
 func convert(glxml string, api string, number string, glgo string) error {
@@ -216,8 +340,8 @@ func convert(glxml string, api string, number string, glgo string) error {
 					is_types[p.ptype] = true
 				}
 				param_list[i] = pair{
-					k: p.name,
-					v: strings.TrimSpace(text[:len(text)-len(p.name)]),
+					name:  p.name,
+					type_: strings.TrimSpace(text[:len(text)-len(p.name)]),
 				}
 			}
 			info := command_info{
@@ -227,17 +351,59 @@ func convert(glxml string, api string, number string, glgo string) error {
 			commands_map[c.proto.name] = info
 		}
 	}
-	fmt.Println(template[0])
-	fmt.Println(gen_c_def_type(is_types, api, registry.types))
-	fmt.Println(template[1])
+	for _, t := range registry.types.type_ {
+		if is_types[t.name] && is_same_api(api, t.api) {
+			if t.requires != "" {
+				is_types[t.requires] = true
+			}
+		}
+	}
+	types_list := make([]type_info, 0, len(is_types))
+	for _, t := range registry.types.type_ {
+		if is_types[t.name] && is_same_api(api, t.api) {
+			types_list = append(types_list, type_info{
+				name: t.name,
+				text: t.text,
+			})
+		}
+	}
+	f, err := os.OpenFile(glgo, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	f.WriteString(template[0])
+	f.WriteString(template[2])
+	f.WriteString(gen_c_def_type(types_list))
+	f.WriteString(template[3])
 	for k, v := range commands_map {
-		fmt.Println(gen_c_def_command(k, v))
+		f.WriteString(gen_c_def_command(k, v))
 	}
-	fmt.Println(template[2])
+	f.WriteString(template[4])
 	for k, _ := range commands_map {
-		fmt.Println(gen_c_init_command(k))
+		f.WriteString(gen_c_init_command(k))
 	}
-	fmt.Println(template[3])
+	f.WriteString(template[5])
+	f.WriteString(template[6])
+	for k, v := range enums_map {
+		f.WriteString("\t" + kill_gl(k) + " = " + v + "\n")
+	}
+	f.WriteString(template[7])
+	f.WriteString(template[8])
+	for _, t := range types_list {
+		if !strings.HasPrefix(t.name, "GL") {
+			continue
+		}
+		gotype := kill_gl(t.name)
+		if raw := map_go_ptype[gotype]; raw != "" {
+			f.WriteString("\t" + gotype + " " + raw + "\n")
+		}
+	}
+	f.WriteString(template[9])
+	for command, info := range commands_map {
+		f.WriteString(gen_go_def_command(command, info))
+	}
+	f.WriteString(template[10])
 	return nil
 }
 
@@ -245,7 +411,7 @@ func main() {
 	var argin string
 	var argout string
 	flag.StringVar(&argin, "i", "gl.xml", "input path of gl.xml")
-	flag.StringVar(&argout, "o", ".", "output path of gl.go")
+	flag.StringVar(&argout, "o", "../gl/gl.go", "output path of gl.go")
 	flag.Parse()
 	if !flag.Parsed() || flag.NArg() != 0 {
 		panic("miss arg")
@@ -254,7 +420,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := convert(argin, "", "3.2", outpath); err != nil {
+	if err := convert(argin, "", "2.1", outpath); err != nil {
 		panic(err)
 	}
 }
