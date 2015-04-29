@@ -126,16 +126,16 @@ var gl_prefix_list = [...]string{
 }
 
 var go_rawtype_map = map[string]string{
-	"GLenum":     "uint32",
+	"GLenum":     "uint",
 	"GLboolean":  "uint8",
 	"GLbitfield": "uint32",
 	"GLbyte":     "int8",
 	"GLshort":    "int16",
-	"GLint":      "int32",
+	"GLint":      "int",
 	"GLubyte":    "uint8",
 	"GLushort":   "uint16",
-	"GLuint":     "uint32",
-	"GLsizei":    "int32",
+	"GLuint":     "uint",
+	"GLsizei":    "int",
 	"GLfloat":    "float32",
 	"GLclampf":   "float32",
 	"GLdouble":   "float64",
@@ -446,8 +446,8 @@ func generate(glxml string, api string, number string, glgo string) error {
 		f.WriteString(gen_c_init_command(k))
 	}
 	f.WriteString(templates[6])
+	f.WriteString("\nconst GL_VERSION_NUMBER = \"" + number + "\"\n")
 	f.WriteString(templates[7])
-
 	for k, v := range enums_map {
 		f.WriteString("\t" + k + strings.Repeat(" ", max_enums_len-len(k)) + " = " + v + "\n")
 	}
