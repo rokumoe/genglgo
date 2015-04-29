@@ -99,7 +99,7 @@ func Init() int {
 `,
 }
 
-type pair struct {
+type param_info struct {
 	name  string
 	ptype string
 }
@@ -110,7 +110,7 @@ type type_info struct {
 }
 
 type command_info struct {
-	params  []pair
+	params  []param_info
 	rettype string
 }
 
@@ -277,12 +277,20 @@ func save_go_kw(w string) string {
 func gen_go_func_command(command string, info command_info) string {
 	params := ""
 	paramargs := ""
-	for _, p := range info.params {
+	for i, p := range info.params {
 		name := save_go_kw(p.name)
 		if params != "" {
 			params += ", "
 		}
-		params += name + " " + gotype_map[p.ptype]
+		params += name
+		gotype := gotype_map[p.ptype]
+		nexttype := ""
+		if i < len(info.params)-1 {
+			nexttype = gotype_map[info.params[i+1].ptype]
+		}
+		if gotype != nexttype {
+			params += " " + gotype
+		}
 		if paramargs != "" {
 			paramargs += ", "
 		}
@@ -374,14 +382,14 @@ func convert(glxml string, api string, number string, glgo string) error {
 			if c.proto.ptype != "" {
 				is_types[c.proto.ptype] = true
 			}
-			param_list := make([]pair, len(c.param))
+			param_list := make([]param_info, len(c.param))
 			for i, p := range c.param {
 				text := p.text
 				if p.ptype != "" {
 					is_types[p.ptype] = true
 				}
 				ptype := strings.TrimSpace(text[:len(text)-len(p.name)])
-				param_list[i] = pair{
+				param_list[i] = param_info{
 					name:  p.name,
 					ptype: ptype,
 				}
