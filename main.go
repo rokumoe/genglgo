@@ -24,7 +24,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := convert(argin, argapi, argver, outpath); err != nil {
+	if err := generate(argin, argapi, argver, outpath); err != nil {
 		panic(err)
 	}
 }

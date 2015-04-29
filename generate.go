@@ -21,7 +21,8 @@ import (
 //#cgo linux	LDFLAGS: -lGL
 //#cgo windows  LDFLAGS: -lopengl32
 import "C"
-
+`,
+	`
 /*
 #if defined(GL_PLATFORM_LINUX)
 #include <GL/glx.h>
@@ -50,6 +51,10 @@ import "C"
 #define GLGO_APIENTRY
 #endif
 
+#ifndef GLGO_APIENTRYP
+#define GLGO_APIENTRYP APIENTRY *
+#endif
+
 #ifdef far
 #undef far
 #endif
@@ -58,7 +63,7 @@ import "C"
 #endif
 
 #define GLGO_COMMAND_DECL(return_type, command, ...) \
-typedef return_type (GLGO_APIENTRY *_glgo_t_##command)(__VA_ARGS__);\
+typedef return_type (GLGO_APIENTRYP _glgo_t_##command)(__VA_ARGS__);\
 static _glgo_t_##command _glgo_p_##command = 0;\
 return_type command(__VA_ARGS__)
 
@@ -77,7 +82,8 @@ return_type command(__VA_ARGS__)
 */
 import "C"
 `,
-	`/*
+	`
+/*
 `,
 	`
 int gl_init()
@@ -230,7 +236,7 @@ func gen_c_def_type(types []type_info) string {
 		}
 	}
 	s += "//#endif\n"
-	return s + "import \"C\"\n\n"
+	return s + "import \"C\"\n"
 }
 
 func gen_c_def_command(command string, info command_info) string {
@@ -317,7 +323,7 @@ func gen_go_func_command(command string, info command_info) string {
 	return s
 }
 
-func convert(glxml string, api string, number string, glgo string) error {
+func generate(glxml string, api string, number string, glgo string) error {
 	registry, err := load_glxml(glxml)
 	if err != nil {
 		return err
@@ -432,23 +438,24 @@ func convert(glxml string, api string, number string, glgo string) error {
 	f.WriteString(templates[2])
 	f.WriteString(gen_c_def_type(ctypes_list))
 	f.WriteString(templates[3])
+	f.WriteString(templates[4])
 	for k, v := range commands_map {
 		f.WriteString(gen_c_def_command(k, v))
 	}
-	f.WriteString(templates[4])
+	f.WriteString(templates[5])
 	for k, _ := range commands_map {
 		f.WriteString(gen_c_init_command(k))
 	}
-	f.WriteString(templates[5])
 	f.WriteString(templates[6])
+	f.WriteString(templates[7])
 
 	for k, v := range enums_map {
 		f.WriteString("\t" + k + strings.Repeat(" ", max_enums_len-len(k)) + " = " + v + "\n")
 	}
-	f.WriteString(templates[7])
+	f.WriteString(templates[8])
 	for command, info := range commands_map {
 		f.WriteString(gen_go_func_command(command, info))
 	}
-	f.WriteString(templates[8])
+	f.WriteString(templates[9])
 	return nil
 }
