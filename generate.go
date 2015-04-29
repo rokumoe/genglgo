@@ -183,6 +183,10 @@ func kill_gl(s string) string {
 	return s
 }
 
+func comment_text(t string) string {
+	return "//" + strings.Replace(t, "\n", "\n//", -1)
+}
+
 func map_cgotype(t string) string {
 	r := ""
 	p := 0
@@ -227,13 +231,7 @@ func gen_c_def_type(types []type_info) string {
 	s := "\n"
 	s += "//#ifndef __gl_h_\n"
 	for _, t := range types {
-		b := 0
-		for i := 0; i <= len(t.text); i++ {
-			if i == len(t.text) || t.text[i] == '\n' {
-				s += "//" + t.text[b:i] + "\n"
-				b = i + 1
-			}
-		}
+		s += comment_text(t.text) + "\n"
 	}
 	s += "//#endif\n"
 	return s + "import \"C\"\n"
@@ -307,7 +305,8 @@ func gen_go_func_command(command string, info command_info) string {
 		}
 		paramargs += cgotype + "(" + name + ")"
 	}
-	s := "\nfunc " + kill_gl(command) + "(" + params + ") "
+	s := "\n"
+	s += "func " + kill_gl(command) + "(" + params + ") "
 	if info.rettype != "void" {
 		rettype := gotype_map[info.rettype]
 		s += rettype + " {\n"

@@ -32,8 +32,9 @@ type registry_commands_command struct {
 	vecequiv struct {
 		name string
 	}
-	param []registry_commands_command_param
-	glx   []registry_commands_command_glx
+	comment string
+	param   []registry_commands_command_param
+	glx     []registry_commands_command_glx
 }
 
 type registry_commands struct {
@@ -260,6 +261,8 @@ func glxml_parse_commands(node *xnode, registry *glxml_registry, l *sync.Mutex) 
 	l.Unlock()
 	for _, e := range node.elements("command") {
 		var command registry_commands_command
+		command.comment = e.attr("comment")
+		println(command.comment)
 		proto := e.elements("proto")[0]
 		command.proto.group = proto.attr("group")
 		command.proto.name = proto.elements("name")[0].text()
