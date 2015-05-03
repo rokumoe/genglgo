@@ -33,8 +33,17 @@ static void* _glgo_GetProcAddress(const char* name) {
 #elif defined(GL_PLATFORM_WINDOWS)
 #include <Windows.h>
 
+static HMODULE _hOpengl32 = NULL;
+
 static void* _glgo_GetProcAddress(const char* name) {
-	return wglGetProcAddress((LPCSTR)name);
+	void *p = wglGetProcAddress((LPCSTR)name);
+	if (p == NULL) {
+		if (_hOpengl32 == NULL) {
+			_hOpengl32 = LoadLibrary(TEXT("opengl32.dll"));
+		}
+		p = GetProcAddress(_hOpengl32, name);
+	}
+	return p;
 }
 #else
 #error "Unsupport platform"
