@@ -12,10 +12,10 @@ func main() {
 		argapi string
 		argver string
 	)
-	flag.StringVar(&argin, "i", "gl.xml", "input path of gl.xml")
-	flag.StringVar(&argout, "o", "gl.go", "output path of gl.go")
-	flag.StringVar(&argapi, "a", "", "GL API")
-	flag.StringVar(&argver, "v", "2.1", "OpenGL version")
+	flag.StringVar(&argin, "i", "res/gl.xml", "input path of gl.xml")
+	flag.StringVar(&argout, "o", "gl/gl.go", "output path of gl.go")
+	flag.StringVar(&argapi, "a", "gl", "GL API")
+	flag.StringVar(&argver, "v", "4.0", "OpenGL version")
 	flag.Parse()
 	if !flag.Parsed() || flag.NArg() != 0 {
 		panic("miss arg")

@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode"
@@ -436,7 +437,11 @@ func generate(glxml string, api string, number string, glgo string) error {
 			})
 		}
 	}
-	f, err := os.OpenFile(glgo, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
+	err = os.MkdirAll(filepath.Dir(glgo), 0775)
+	if err != nil {
+		return err
+	}
+	f, err := os.Create(glgo)
 	if err != nil {
 		return err
 	}
