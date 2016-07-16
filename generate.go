@@ -9,7 +9,7 @@ import (
 )
 
 var templates = []string{
-	`// +build windows, linux
+	`// +build windows linux
 
 package gl
 
