@@ -11,8 +11,9 @@ import (
 var templates = []string{
 	`// +build windows, linux
 
-// generate by gengogl[https://github.com/vizee/gengogl]
 package gl
+
+// generate by genglgo[https://github.com/vizee/genglgo]
 `,
 	`
 import (
