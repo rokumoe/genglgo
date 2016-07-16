@@ -9,7 +9,10 @@ import (
 )
 
 var templates = []string{
-	`package gl
+	`// +build windows, linux
+
+// generate by gengogl[https://github.com/vizee/gengogl]
+package gl
 `,
 	`
 import (
@@ -17,10 +20,10 @@ import (
 )
 `,
 	`
-//#cgo linux	CFLAGS: -DGL_PLATFORM_LINUX
-//#cgo windows	CFLAGS: -DGL_PLATFORM_WINDOWS
-//#cgo linux	LDFLAGS: -lGL
-//#cgo windows  LDFLAGS: -lopengl32
+//#cgo linux   CFLAGS: -DGL_PLATFORM_LINUX
+//#cgo linux   LDFLAGS: -lGL
+//#cgo windows CFLAGS: -DGL_PLATFORM_WINDOWS
+//#cgo windows LDFLAGS: -lopengl32
 import "C"
 `,
 	`
