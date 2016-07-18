@@ -7,24 +7,24 @@ import (
 
 func main() {
 	var (
-		argin  string
-		argout string
-		argapi string
-		argver string
+		optInput   string
+		optOutput  string
+		optAPI     string
+		optVersion string
 	)
-	flag.StringVar(&argin, "i", "res/gl.xml", "input path of gl.xml")
-	flag.StringVar(&argout, "o", "gl/gl.go", "output path of gl.go")
-	flag.StringVar(&argapi, "a", "gl", "GL API")
-	flag.StringVar(&argver, "v", "4.0", "OpenGL version")
+	flag.StringVar(&optInput, "input", "res/gl.xml", "input path of gl.xml")
+	flag.StringVar(&optOutput, "output", "gl/gl.go", "output path of gl.go")
+	flag.StringVar(&optAPI, "api", "gl", "GL API")
+	flag.StringVar(&optVersion, "version", "3.2", "OpenGL version")
 	flag.Parse()
 	if !flag.Parsed() || flag.NArg() != 0 {
-		panic("miss arg")
+		panic("error flags")
 	}
-	outpath, err := filepath.Abs(argout)
+	outpath, err := filepath.Abs(optOutput)
 	if err != nil {
 		panic(err)
 	}
-	if err := generate(argin, argapi, argver, outpath); err != nil {
+	if err := generate(optInput, optAPI, optVersion, outpath); err != nil {
 		panic(err)
 	}
 }

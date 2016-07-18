@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -451,6 +453,7 @@ func generate(glxml string, api string, number string, glgo string) error {
 	}
 	defer f.Close()
 	f.WriteString(templates[0])
+	f.WriteString(fmt.Sprintf("// target: %s-%s, updated at: %s", api, number, time.Now().Format("2006-01-02 15:04:05")))
 	f.WriteString(templates[1])
 	f.WriteString(templates[2])
 	f.WriteString(gen_c_def_type(ctypes_list))
@@ -464,7 +467,9 @@ func generate(glxml string, api string, number string, glgo string) error {
 		f.WriteString(gen_c_init_command(k))
 	}
 	f.WriteString(templates[6])
-	f.WriteString("\nconst GL_VERSION_NUMBER = \"" + number + "\"\n")
+	f.WriteString("\nconst (\n")
+	f.WriteString(fmt.Sprintf("\tAPI_NAME    = \"%s\"\n\tAPI_VERSION = \"%s\"\n", api, number))
+	f.WriteString(")\n")
 	f.WriteString(templates[7])
 	for k, v := range enums_map {
 		f.WriteString("\t" + k + strings.Repeat(" ", max_enums_len-len(k)) + " = " + v + "\n")
