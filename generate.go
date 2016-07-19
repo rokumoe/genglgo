@@ -338,7 +338,7 @@ func gen_go_func_command(command string, info command_info) string {
 	return s
 }
 
-func generate(glxml string, api string, number string, glgo string) error {
+func generate(glxml string, api string, profile string, number string, glgo string) error {
 	registry, err := load_glxml(glxml)
 	if err != nil {
 		return err
@@ -359,6 +359,9 @@ func generate(glxml string, api string, number string, glgo string) error {
 		}
 		if is_same_api(api, feature.api) && ver <= max_ver {
 			for _, require := range feature.require {
+				if require.profile != "" && require.profile != profile {
+					continue
+				}
 				for _, type_ := range require.type_ {
 					is_types[type_.name] = true
 				}
@@ -370,6 +373,9 @@ func generate(glxml string, api string, number string, glgo string) error {
 				}
 			}
 			for _, remove := range feature.remove {
+				if remove.profile != "" && remove.profile != profile {
+					continue
+				}
 				for _, enum := range remove.enum {
 					delete(is_enums, enum.name)
 				}
@@ -453,7 +459,7 @@ func generate(glxml string, api string, number string, glgo string) error {
 	}
 	defer f.Close()
 	f.WriteString(templates[0])
-	f.WriteString(fmt.Sprintf("// target: %s-%s, updated at: %s", api, number, time.Now().Format("2006-01-02 15:04:05")))
+	f.WriteString(fmt.Sprintf("// target: %s-%s-%s, updated at: %s", api, profile, number, time.Now().Format("2006-01-02 15:04:05")))
 	f.WriteString(templates[1])
 	f.WriteString(templates[2])
 	f.WriteString(gen_c_def_type(ctypes_list))
